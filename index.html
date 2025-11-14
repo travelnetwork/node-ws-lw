@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Network - Protect Earth</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>3D城市地段模拟器</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     <style>
         * {
             margin: 0;
@@ -12,711 +13,555 @@
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        :root {
-            --primary: #2e7d32;
-            --secondary: #4caf50;
-            --accent: #8bc34a;
-            --light: #e8f5e9;
-            --dark: #1b5e20;
-            --text: #333333;
-            --white: #ffffff;
-        }
-
+        
         body {
-            background-color: var(--light);
-            color: var(--text);
-            line-height: 1.6;
+            overflow: hidden;
+            background: linear-gradient(135deg, #4fc3f7, #87ceeb);
+            height: 100vh;
+            color: #fff;
+            transition: background 0.8s ease;
         }
 
-        header {
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: var(--white);
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
+        body.night {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        }
+        
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             z-index: 100;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-
-        .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 0 auto;
+        
+        #info h1 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
         }
-
-        .nav-container {
+        
+        #info p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-
-        .logo {
+        
+        .control-btn {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(33, 150, 243, 0.6);
+        }
+        
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+        
+        #night-btn {
+            background: linear-gradient(45deg, #5C6BC0, #3949AB);
+        }
+        
+        #stats {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 14px;
+            z-index: 100;
+        }
+        
+        .building-info {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: none;
+            z-index: 50;
+            font-size: 14px;
+            pointer-events: none;
+            transform: translate(-50%, -120%); /* 让标签显示在建筑上方 */
+        }
+        
+        .time-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50px;
+            padding: 10px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 100;
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 1.8rem;
-            font-weight: 700;
         }
-
-        .logo i {
-            font-size: 2rem;
-        }
-
-        nav ul {
-            display: flex;
-            list-style: none;
-        }
-
-        nav ul li {
-            margin-left: 2rem;
-        }
-
-        nav ul li a {
-            color: var(--white);
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            padding: 0.5rem 0;
-            position: relative;
-        }
-
-        nav ul li a:hover {
-            color: var(--accent);
-        }
-
-        nav ul li a::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background-color: var(--accent);
-            transition: width 0.3s ease;
-        }
-
-        nav ul li a:hover::after {
-            width: 100%;
-        }
-
-        .hero {
-            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2073&q=80');
-            background-size: cover;
-            background-position: center;
-            height: 80vh;
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: var(--white);
-        }
-
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .hero p {
-            font-size: 1.3rem;
-            margin-bottom: 2rem;
-        }
-
-        .btn {
-            display: inline-block;
-            background-color: var(--accent);
-            color: var(--white);
-            padding: 0.8rem 2rem;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn:hover {
-            background-color: var(--primary);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        section {
-            padding: 5rem 0;
-        }
-
-        .section-title {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .section-title h2 {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 1rem;
-            position: relative;
-            display: inline-block;
-        }
-
-        .section-title h2::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 4px;
-            background-color: var(--accent);
-            border-radius: 2px;
-        }
-
-        .section-title p {
-            color: var(--text);
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .about-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
-        }
-
-        .about-img {
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .about-img img {
-            width: 100%;
-            height: auto;
-            display: block;
-            transition: transform 0.5s ease;
-        }
-
-        .about-img:hover img {
-            transform: scale(1.05);
-        }
-
-        .about-text h3 {
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            color: var(--dark);
-        }
-
-        .about-text p {
-            margin-bottom: 1.5rem;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 2rem 1rem;
-            background-color: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-item:hover {
-            transform: translateY(-10px);
-        }
-
-        .stat-item i {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 1rem;
-        }
-
-        .stat-item h3 {
-            font-size: 2.5rem;
-            color: var(--dark);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-item p {
-            color: var(--text);
-        }
-
-        .initiatives {
-            background-color: var(--white);
-        }
-
-        .initiatives-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-        }
-
-        .initiative-card {
-            background-color: var(--light);
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
-        }
-
-        .initiative-card:hover {
-            transform: translateY(-10px);
-        }
-
-        .initiative-img {
-            height: 200px;
-            overflow: hidden;
-        }
-
-        .initiative-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .initiative-card:hover .initiative-img img {
-            transform: scale(1.1);
-        }
-
-        .initiative-content {
-            padding: 1.5rem;
-        }
-
-        .initiative-content h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: var(--dark);
-        }
-
-        .initiative-content p {
-            margin-bottom: 1.5rem;
-        }
-
-        .cta {
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: var(--white);
-            text-align: center;
-            padding: 5rem 0;
-        }
-
-        .cta h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .cta p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .cta .btn {
-            background-color: var(--white);
-            color: var(--primary);
-        }
-
-        .cta .btn:hover {
-            background-color: var(--accent);
-            color: var(--white);
-        }
-
-        footer {
-            background-color: var(--dark);
-            color: var(--white);
-            padding: 3rem 0 1rem;
-        }
-
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .footer-column h3 {
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
-            position: relative;
-            padding-bottom: 10px;
-        }
-
-        .footer-column h3::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 40px;
-            height: 2px;
-            background-color: var(--accent);
-        }
-
-        .footer-column p {
-            margin-bottom: 1rem;
-        }
-
-        .footer-links {
-            list-style: none;
-        }
-
-        .footer-links li {
-            margin-bottom: 0.8rem;
-        }
-
-        .footer-links li a {
-            color: var(--light);
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .footer-links li a:hover {
-            color: var(--accent);
-            padding-left: 5px;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .social-links a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background-color: rgba(255, 255, 255, 0.1);
+        
+        .time-icon {
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            color: var(--white);
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .social-links a:hover {
-            background-color: var(--accent);
-            transform: translateY(-5px);
-        }
-
-        .copyright {
-            text-align: center;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .mobile-menu {
-            display: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        @media (max-width: 992px) {
-            .about-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .initiatives-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .footer-content {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-            
-            .hero p {
-                font-size: 1.1rem;
-            }
-            
-            nav ul {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                width: 100%;
-                background-color: var(--primary);
-                flex-direction: column;
-                padding: 1rem 0;
-                text-align: center;
-                box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-            }
-            
-            nav ul.active {
-                display: flex;
-            }
-            
-            nav ul li {
-                margin: 0;
-                padding: 0.8rem 0;
-            }
-            
-            .mobile-menu {
-                display: block;
-            }
-            
-            .initiatives-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .footer-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Animation for stats counter */
-        .counter {
+            background: #FFD700;
+            box-shadow: 0 0 10px #FFD700;
             transition: all 0.5s ease;
+        }
+        
+        body.night .time-icon {
+            background: #E0E0E0;
+            box-shadow: 0 0 15px #E0E0E0;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="container nav-container">
-            <div class="logo">
-                <i class="fas fa-seedling"></i>
-                <span>Green Network</span>
-            </div>
-            <nav>
-                <div class="mobile-menu">
-                    <i class="fas fa-bars"></i>
-                </div>
-                <ul>
-                    <li><a href="#home">Home</a></li>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#initiatives">Initiatives</a></li>
-                    <li><a href="#get-involved">Get Involved</a></li>
-                    <li><a href="#contact">Contact</a></li>
-                </ul>
-            </nav>
+    <div id="container">
+        <div id="info">
+            <h1>3D城市地段模拟器</h1>
+            <p>探索这个交互式3D城市环境，包含高楼大厦、移动车辆和行人。</p>
+            <p>• 使用鼠标拖拽旋转视角</p>
+            <p>• 使用滚轮缩放视图</p>
+            <p>• 点击下方按钮切换白天/黑夜模式</p>
         </div>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="hero" id="home">
-        <div class="container hero-content">
-            <h1>Protect Our Planet, Preserve Our Future</h1>
-            <p>Join the global movement to create a sustainable world through conservation, education, and community action.</p>
-            <a href="#get-involved" class="btn">Join Our Network</a>
+        
+        <div id="controls">
+            <button id="day-btn" class="control-btn">白天模式</button>
+            <button id="night-btn" class="control-btn">黑夜模式</button>
+            <button id="reset-btn" class="control-btn">重置视角</button>
         </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about">
-        <div class="container">
-            <div class="section-title">
-                <h2>About Green Network</h2>
-                <p>We are a global community dedicated to environmental protection and sustainable development.</p>
-            </div>
-            <div class="about-content">
-                <div class="about-img">
-                    <img src="https://images.unsplash.com/photo-1507591064344-4c6ce005b128?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Team planting trees">
-                </div>
-                <div class="about-text">
-                    <h3>Our Mission</h3>
-                    <p>Green Network is committed to creating a sustainable future by protecting natural ecosystems, promoting renewable energy, and empowering communities to take environmental action.</p>
-                    <p>Founded in 2010, we've grown from a small grassroots organization to an international network with over 50,000 members across 120 countries.</p>
-                    <p>Our approach combines scientific research, community engagement, and policy advocacy to address the most pressing environmental challenges of our time.</p>
-                    <a href="#" class="btn">Learn More</a>
-                </div>
-            </div>
-            <div class="stats">
-                <div class="stat-item">
-                    <i class="fas fa-tree"></i>
-                    <h3 class="counter" data-target="2500000">0</h3>
-                    <p>Trees Planted</p>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-users"></i>
-                    <h3 class="counter" data-target="50000">0</h3>
-                    <p>Active Members</p>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-globe-americas"></i>
-                    <h3 class="counter" data-target="120">0</h3>
-                    <p>Countries Reached</p>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-recycle"></i>
-                    <h3 class="counter" data-target="1500">0</h3>
-                    <p>Cleanup Projects</p>
-                </div>
-            </div>
+        
+        <div class="time-indicator">
+            <div class="time-icon"></div>
+            <span>白天</span>
         </div>
-    </section>
-
-    <!-- Initiatives Section -->
-    <section class="initiatives" id="initiatives">
-        <div class="container">
-            <div class="section-title">
-                <h2>Our Initiatives</h2>
-                <p>Discover the key programs and projects we're implementing to protect our planet.</p>
-            </div>
-            <div class="initiatives-grid">
-                <div class="initiative-card">
-                    <div class="initiative-img">
-                        <img src="https://dialogue.earth/content/uploads/2021/04/lessons-from-the-rush-to-reforest-china-dialogue-2400x1599.jpg" alt="Reforestation">
-                    </div>
-                    <div class="initiative-content">
-                        <h3>Global Reforestation</h3>
-                        <p>Planting millions of trees worldwide to restore ecosystems, combat climate change, and protect biodiversity.</p>
-                        <a href="#" class="btn">Learn More</a>
-                    </div>
-                </div>
-                <div class="initiative-card">
-                    <div class="initiative-img">
-                        <img src="https://images.unsplash.com/photo-1621451537084-482c73073a0f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80" alt="Ocean Conservation">
-                    </div>
-                    <div class="initiative-content">
-                        <h3>Ocean Conservation</h3>
-                        <p>Protecting marine ecosystems, reducing plastic pollution, and promoting sustainable fishing practices.</p>
-                        <a href="#" class="btn">Learn More</a>
-                    </div>
-                </div>
-                <div class="initiative-card">
-                    <div class="initiative-img">
-                        <img src="https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80" alt="Renewable Energy">
-                    </div>
-                    <div class="initiative-content">
-                        <h3>Renewable Energy</h3>
-                        <p>Promoting solar, wind, and other clean energy sources to reduce dependence on fossil fuels.</p>
-                        <a href="#" class="btn">Learn More</a>
-                    </div>
-                </div>
-            </div>
+        
+        <div id="stats">
+            建筑物: 35 | 车辆: 42 | 行人: 28
         </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="cta" id="get-involved">
-        <div class="container">
-            <h2>Join Our Global Movement</h2>
-            <p>Together, we can create a sustainable future for generations to come. Every action counts, no matter how small.</p>
-            <a href="#" class="btn">Become a Member</a>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer id="contact">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-column">
-                    <h3>Green Network</h3>
-                    <p>We are dedicated to protecting our planet through collaborative action, education, and sustainable solutions.</p>
-                    <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                    </div>
-                </div>
-                <div class="footer-column">
-                    <h3>Quick Links</h3>
-                    <ul class="footer-links">
-                        <li><a href="#home">Home</a></li>
-                        <li><a href="#about">About Us</a></li>
-                        <li><a href="#initiatives">Initiatives</a></li>
-                        <li><a href="#get-involved">Get Involved</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Our Programs</h3>
-                    <ul class="footer-links">
-                        <li><a href="#">Reforestation</a></li>
-                        <li><a href="#">Ocean Cleanup</a></li>
-                        <li><a href="#">Wildlife Protection</a></li>
-                        <li><a href="#">Climate Education</a></li>
-                        <li><a href="#">Sustainable Agriculture</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Contact Us</h3>
-                    <p><i class="fas fa-map-marker-alt"></i> Copper Creek Drive, New York</p>
-                    <p><i class="fas fa-phone"></i> +1 (312) 171-0771</p>
-                    <p><i class="fas fa-envelope"></i> support@greennetwork.org</p>
-                </div>
-            </div>
-            <div class="copyright">
-                <p>&copy; 2025 Green Network. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+    </div>
 
     <script>
-        // Mobile Menu Toggle
-        document.querySelector('.mobile-menu').addEventListener('click', function() {
-            document.querySelector('nav ul').classList.toggle('active');
-        });
-
-        // Counter Animation
-        function animateCounters() {
-            const counters = document.querySelectorAll('.counter');
-            const speed = 200; // The lower the slower
+        // 主程序
+        document.addEventListener('DOMContentLoaded', () => {
+            // 创建场景
+            const scene = new THREE.Scene();
             
-            counters.forEach(counter => {
-                const target = +counter.getAttribute('data-target');
-                const count = +counter.innerText;
-                
-                const inc = target / speed;
-                
-                if(count < target) {
-                    counter.innerText = Math.ceil(count + inc);
-                    setTimeout(animateCounters, 1);
-                } else {
-                    counter.innerText = target;
-                }
+            // 创建相机
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 50, 100);
+            
+            // 创建渲染器
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.setClearColor(0x000000, 0); // 设置透明背景
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // 添加轨道控制器
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 30;
+            controls.maxDistance = 200;
+            
+            // 添加环境光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            // 添加方向光（太阳/月亮）
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+            sunLight.position.set(100, 200, 100);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            scene.add(sunLight);
+            
+            // 添加半球光
+            const hemiLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.2);
+            scene.add(hemiLight);
+            
+            // 创建地面
+            const groundGeometry = new THREE.PlaneGeometry(400, 400);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2e7d32,
+                roughness: 0.8,
+                metalness: 0.2
             });
-        }
-
-        // Initialize counters when page loads
-        window.addEventListener('load', animateCounters);
-
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // 添加道路网格
+            addRoadGrid();
+            
+            // 创建建筑物
+            const buildings = [];
+            const buildingInfoElements = [];
+            const buildingWindowsList = []; // **修正点**: 用于存储窗户对象
+            
+            for (let i = 0; i < 35; i++) {
+                createBuilding();
+            }
+            
+            // 创建车辆
+            const cars = [];
+            for (let i = 0; i < 42; i++) { // 与HTML面板中的数字匹配
+                createCar();
+            }
+            
+            // 创建行人
+            const pedestrians = [];
+            for (let i = 0; i < 28; i++) { // 与HTML面板中的数字匹配
+                createPedestrian();
+            }
+            
+            // 添加水面
+            const waterGeometry = new THREE.PlaneGeometry(200, 200);
+            const waterMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1976d2,
+                transparent: true,
+                opacity: 0.7,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const water = new THREE.Mesh(waterGeometry, waterMaterial);
+            water.rotation.x = -Math.PI / 2;
+            water.position.set(-150, 0.1, 100);
+            scene.add(water);
+            
+            // 添加公园
+            createPark(-80, 0, 80);
+            
+            // 事件监听
+            document.getElementById('day-btn').addEventListener('click', setDaytime);
+            document.getElementById('night-btn').addEventListener('click', setNighttime);
+            document.getElementById('reset-btn').addEventListener('click', resetView);
+            
+            // 窗口大小调整
+            window.addEventListener('resize', onWindowResize);
+            
+            // 动画循环
+            animate();
+            
+            // 创建建筑物函数
+            function createBuilding() {
+                const width = Math.random() * 30 + 15;
+                const height = Math.random() * 60 + 30;
+                const depth = Math.random() * 30 + 15;
                 
-                const targetId = this.getAttribute('href');
-                if(targetId === '#') return;
+                const geometry = new THREE.BoxGeometry(width, height, depth);
                 
-                const targetElement = document.querySelector(targetId);
-                if(targetElement) {
-                    window.scrollTo({
-                        top: targetElement.offsetTop - 80,
-                        behavior: 'smooth'
-                    });
+                const colors = [0x607d8b, 0x78909c, 0x90a4ae, 0x455a64, 0x37474f, 0x546e7a, 0x1976d2, 0x0288d1, 0x039be5];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.7, metalness: 0.3 });
+                
+                const building = new THREE.Mesh(geometry, material);
+                building.castShadow = true;
+                building.receiveShadow = true;
+                
+                const x = Math.random() * 300 - 150;
+                const z = Math.random() * 300 - 150;
+                building.position.set(x, height/2, z);
+                
+                scene.add(building);
+                buildings.push(building);
+                
+                // **修正点**: 创建窗户并默认隐藏
+                const windows = createBuildingWindows(building);
+                windows.visible = false;
+                scene.add(windows);
+                buildingWindowsList.push(windows);
+
+                // 创建建筑信息元素
+                const infoElement = document.createElement('div');
+                infoElement.className = 'building-info';
+                infoElement.innerHTML = `大楼 #${buildings.length}<br>高度: ${Math.round(height)}m<br>面积: ${Math.round(width*depth)}m²`;
+                document.getElementById('container').appendChild(infoElement);
+                buildingInfoElements.push(infoElement);
+            }
+            
+            // 创建车辆函数
+            function createCar() {
+                const width = 4;
+                const height = 2;
+                const depth = 8;
+                
+                const geometry = new THREE.BoxGeometry(width, height, depth);
+                const colors = [0xe53935, 0xd81b60, 0x8e24aa, 0x5e35b1, 0x3949ab, 0x1e88e5, 0x039be5, 0x00acc1, 0x00897b, 0x43a047, 0x7cb342, 0xc0ca33, 0xfdd835, 0xffb300, 0xfb8c00, 0xf4511e];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5, metalness: 0.8 });
+                
+                const car = new THREE.Mesh(geometry, material);
+                car.castShadow = true;
+                car.receiveShadow = true;
+                
+                const roadX = Math.random() > 0.5 ? (Math.random() * 300 - 150) : (Math.random() > 0.5 ? -150 : 150);
+                const roadZ = Math.random() > 0.5 ? (Math.random() * 300 - 150) : (Math.random() > 0.5 ? -150 : 150);
+                
+                car.position.set(roadX, height/2 + 0.2, roadZ);
+                car.userData.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.5, 0, (Math.random() - 0.5) * 0.5);
+                
+                scene.add(car);
+                cars.push(car);
+            }
+            
+            // 创建行人函数
+            function createPedestrian() {
+                const height = 1.8;
+                const radius = 0.4;
+                const geometry = new THREE.CapsuleGeometry(radius, height - 2 * radius, 4, 8);
+                const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.1 });
+                
+                const pedestrian = new THREE.Mesh(geometry, material);
+                pedestrian.castShadow = true;
+                pedestrian.receiveShadow = true;
+                
+                pedestrian.position.set(Math.random() * 250 - 125, height / 2, Math.random() * 250 - 125);
+                pedestrian.userData.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.1, 0, (Math.random() - 0.5) * 0.1);
+                
+                scene.add(pedestrian);
+                pedestrians.push(pedestrian);
+            }
+            
+            // 创建公园
+            function createPark(x, y, z) {
+                const size = 70;
+                const groundGeometry = new THREE.CircleGeometry(size, 32);
+                const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.9, metalness: 0.1 });
+                const parkGround = new THREE.Mesh(groundGeometry, groundMaterial);
+                parkGround.rotation.x = -Math.PI / 2;
+                parkGround.position.set(x, y + 0.1, z);
+                parkGround.receiveShadow = true;
+                scene.add(parkGround);
+                
+                for (let i = 0; i < 12; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * size * 0.8;
+                    const treeX = x + Math.cos(angle) * radius;
+                    const treeZ = z + Math.sin(angle) * radius;
+                    createTree(treeX, y, treeZ);
+                }
+            }
+            
+            // 创建树木
+            function createTree(x, y, z) {
+                const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.7, 8, 8);
+                const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                trunk.position.set(x, y + 4, z);
+                trunk.castShadow = true;
+                trunk.receiveShadow = true;
+                scene.add(trunk);
+                
+                const leavesGeometry = new THREE.SphereGeometry(5, 8, 8);
+                const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x2e7d32 });
+                const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+                leaves.position.set(x, y + 10, z);
+                leaves.castShadow = true;
+                scene.add(leaves);
+            }
+            
+            // 添加道路网格
+            function addRoadGrid() {
+                for (let i = -180; i <= 180; i += 40) {
+                    const hRoadGeometry = new THREE.PlaneGeometry(400, 10);
+                    const hRoadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const hRoad = new THREE.Mesh(hRoadGeometry, hRoadMaterial);
+                    hRoad.rotation.x = -Math.PI / 2;
+                    hRoad.position.set(0, 0.1, i);
+                    hRoad.receiveShadow = true;
+                    scene.add(hRoad);
                     
-                    document.querySelector('nav ul').classList.remove('active');
+                    const vRoadGeometry = new THREE.PlaneGeometry(10, 400);
+                    const vRoadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const vRoad = new THREE.Mesh(vRoadGeometry, vRoadMaterial);
+                    vRoad.rotation.x = -Math.PI / 2;
+                    vRoad.position.set(i, 0.1, 0);
+                    vRoad.receiveShadow = true;
+                    scene.add(vRoad);
                 }
-            });
+            }
+            
+            // 设置白天模式
+            function setDaytime() {
+                ambientLight.intensity = 0.6;
+                sunLight.intensity = 1;
+                sunLight.color.set(0xffffff);
+                hemiLight.intensity = 0.2;
+                
+                document.body.classList.remove('night');
+                document.querySelector('.time-indicator span').textContent = '白天';
+                
+                // **修正点**: 隐藏所有窗户
+                buildingWindowsList.forEach(windows => {
+                    windows.visible = false;
+                });
+            }
+            
+            // 设置夜晚模式
+            function setNighttime() {
+                ambientLight.intensity = 0.1;
+                sunLight.intensity = 0.2; // 模拟月光
+                sunLight.color.set(0xaaaaff);
+                hemiLight.intensity = 0.05;
+                
+                document.body.classList.add('night');
+                document.querySelector('.time-indicator span').textContent = '夜晚';
+                
+                // **修正点**: 随机显示一些窗户
+                buildingWindowsList.forEach(windows => {
+                    windows.visible = Math.random() > 0.4; // 随机决定是否点亮
+                });
+            }
+            
+            // 创建建筑窗户
+            function createBuildingWindows(building) {
+                const group = new THREE.Group();
+                const width = building.geometry.parameters.width;
+                const height = building.geometry.parameters.height;
+                const depth = building.geometry.parameters.depth;
+                
+                const windowMaterial = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+                
+                for (let y = 5; y < height - 5; y += 5) {
+                    for (let x = -width/2 + 2; x < width/2 - 2; x += 5) {
+                        const windowGeometry = new THREE.PlaneGeometry(2, 1.5);
+                        
+                        // 前后窗户
+                        const frontWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+                        frontWindow.position.set(x, -height/2 + y, depth/2 + 0.01);
+                        group.add(frontWindow);
+
+                        const backWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+                        backWindow.position.set(x, -height/2 + y, -depth/2 - 0.01);
+                        backWindow.rotation.y = Math.PI;
+                        group.add(backWindow);
+                    }
+                     for (let z = -depth/2 + 2; z < depth/2 - 2; z += 5) {
+                        const windowGeometry = new THREE.PlaneGeometry(2, 1.5);
+                        
+                        // 左右窗户
+                        const leftWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+                        leftWindow.position.set(-width/2 - 0.01, -height/2 + y, z);
+                        leftWindow.rotation.y = -Math.PI / 2;
+                        group.add(leftWindow);
+
+                        const rightWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+                        rightWindow.position.set(width/2 + 0.01, -height/2 + y, z);
+                        rightWindow.rotation.y = Math.PI / 2;
+                        group.add(rightWindow);
+                    }
+                }
+                
+                group.position.copy(building.position);
+                return group;
+            }
+            
+            // 重置视角
+            function resetView() {
+                controls.reset();
+                camera.position.set(0, 50, 100);
+                camera.lookAt(0, 0, 0);
+            }
+            
+            // 窗口大小调整处理
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            // 动画循环
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                controls.update();
+                
+                // 移动车辆
+                cars.forEach(car => {
+                    car.position.add(car.userData.velocity);
+                    if (car.position.x < -200 || car.position.x > 200 || car.position.z < -200 || car.position.z > 200) {
+                        car.position.x = (Math.random() - 0.5) * 400;
+                        car.position.z = (Math.random() - 0.5) * 400;
+                    }
+                });
+                
+                // 移动行人
+                pedestrians.forEach(pedestrian => {
+                    pedestrian.position.add(pedestrian.userData.velocity);
+                    if (Math.random() < 0.01) {
+                        pedestrian.userData.velocity.x = (Math.random() - 0.5) * 0.1;
+                        pedestrian.userData.velocity.z = (Math.random() - 0.5) * 0.1;
+                    }
+                    if (pedestrian.position.x < -180 || pedestrian.position.x > 180 || pedestrian.position.z < -180 || pedestrian.position.z > 180) {
+                        pedestrian.position.x *= -1;
+                        pedestrian.position.z *= -1;
+                    }
+                });
+                
+                // 更新建筑信息标签位置
+                buildings.forEach((building, i) => {
+                    const infoElement = buildingInfoElements[i];
+                    const screenPosition = building.position.clone().project(camera);
+                    
+                    if (screenPosition.z > 1) { // 如果在相机后面则隐藏
+                        infoElement.style.display = 'none';
+                    } else {
+                        infoElement.style.display = 'block';
+                        const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
+                        const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
+                        infoElement.style.left = `${x}px`;
+                        infoElement.style.top = `${y}px`;
+                    }
+                });
+                
+                renderer.render(scene, camera);
+            }
+            
+            setDaytime();
         });
     </script>
 </body>
-
 </html>
